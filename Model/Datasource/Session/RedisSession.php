@@ -1,5 +1,7 @@
 <?php
 
+App::uses('CakeSessionHandlerInterface', 'Model/Datasource/Session');
+
 /**
  * Redis Session Store Class. Uses Predis as the PHP connection class
  */
