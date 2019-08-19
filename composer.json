@@ -1,0 +1,12 @@
+{
+    "name": "peloncano/cakephp-plugin-redis-cache",
+    "description": "A CakePHP 2.0 plugin enabling Redis (http://redis.io/) backed sessions and caching. Uses the Predis (https://github.com/nrk/predis) library to communicate with Redis.",
+    "type": "cakephp-plugin",
+    "require": {
+        "composer/installers": "~1.0",
+        "predis/predis": "~1.1"
+    },
+    "extra": {
+        "installer-name": "RedisCache"
+    }
+}
