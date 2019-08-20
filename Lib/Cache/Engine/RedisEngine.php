@@ -6,6 +6,10 @@
 class RedisEngine extends CacheEngine
 {
 
+    /**
+     * Setting option name
+     */
+    const THROW_EXCEPTIONS = 'throwExceptions';
 
     /**
      * Settings
@@ -39,18 +43,11 @@ class RedisEngine extends CacheEngine
 
         parent::init(
             array_merge(array(
-                'engine' => 'Redis', 'prefix' => Inflector::slug(APP_DIR) . '_'
+                'engine' => 'Redis',
+                'prefix' => Inflector::slug(APP_DIR) . '_',
+                self::THROW_EXCEPTIONS => false
             ), $settings)
         );
-
-        // if ( ! isset($this->_Predis)) {
-        //     $this->_Predis = new Predis\Client(
-        //         RedisConfig::cacheConfig()
-        //         , array('prefix' => $this->settings['prefix'])
-        //     );
-        // }
-
-
 
         return $this->_connect();
     }
@@ -70,8 +67,8 @@ class RedisEngine extends CacheEngine
                     array('prefix' => RedisConfig::$globalCachePrefix)
                 );
             }
-
         } catch (Exception $e) {
+            $this->__handleException($e, __FUNCTION__);
             return false;
         }
 
@@ -93,15 +90,23 @@ class RedisEngine extends CacheEngine
 
         $data = $this->_compress($data);
 
-        if (!$this->_Predis->isConnected()) {
-            $this->_connect();
-        }
+        try {
 
-        if ($duration === 0) {
-            return $this->_Predis->set($key, $data);
-        }
+            if (!$this->_Predis->isConnected()) {
+                $this->_connect();
+            }
 
-        return $this->_Predis->setex($key, $duration, $data);
+            if ($duration === 0) {
+                return $this->_Predis->set($key, $data);
+            }
+
+            return $this->_Predis->setex($key, $duration, $data);
+        } catch (Exception $e) {
+            $this->__handleException($e, __FUNCTION__);
+            // Returning true here to trick Cake otherwise we would get a lot of 'unable to write' warnings
+            // If this is not desire set self::THROW_EXCEPTIONS to true
+            return true;
+        }
     }
 
     /**
@@ -114,14 +119,18 @@ class RedisEngine extends CacheEngine
      */
     public function read($key = '')
     {
+        try {
+            $value = $this->_Predis->get($key);
 
-        $value = $this->_Predis->get($key);
+            if (is_null($value)) {
+                return false;
+            }
 
-        if(is_null($value)) {
+            return $this->_expand($value);
+        } catch (Exception $e) {
+            $this->__handleException($e, __FUNCTION__);
             return false;
         }
-
-        return $this->_expand($value);
     }
 
     /**
@@ -135,7 +144,12 @@ class RedisEngine extends CacheEngine
      */
     public function increment($key = '', $offset = 1)
     {
-        return (int) $this->_Predis->incrby($key, $offset);
+        try {
+            return (int) $this->_Predis->incrby($key, $offset);
+        } catch (Exception $e) {
+            $this->__handleException($e, __FUNCTION__);
+            return false;
+        }
     }
 
 
@@ -150,7 +164,12 @@ class RedisEngine extends CacheEngine
      */
     public function decrement($key = '', $offset = 1)
     {
-        return (int) $this->_Predis->decrby($key, $offset);
+        try {
+            return (int) $this->_Predis->decrby($key, $offset);
+        } catch (Exception $e) {
+            $this->__handleException($e, __FUNCTION__);
+            return false;
+        }
     }
 
 
@@ -164,8 +183,13 @@ class RedisEngine extends CacheEngine
      */
     public function delete($key = '')
     {
-        // Predis::del returns an integer 1 on delete, convert to boolean
-        return $this->_Predis->del($key) > 0;
+        try {
+            // Predis::del returns an integer 1 on delete, convert to boolean
+            return $this->_Predis->del($key) > 0;
+        } catch (Exception $e) {
+            $this->__handleException($e, __FUNCTION__);
+            return false;
+        }
     }
 
 
@@ -182,14 +206,19 @@ class RedisEngine extends CacheEngine
             return true;
         }
 
-        error_log(print_r($this->settings['prefix'] . '*', true)); //TODO delete me
-        $keys = $this->_Predis->keys($this->settings['prefix'] . '*');
-        error_log(print_r($keys, true)); //TODO delete me
-        if(!empty($keys)) {
-            $this->_Predis->del($keys);
-        }
+        try {
 
-        return true;
+            $keys = $this->_Predis->keys($this->settings['prefix'] . '*');
+
+            if (!empty($keys)) {
+                $this->_Predis->del($keys);
+            }
+
+            return true;
+        } catch (Exception $e) {
+            $this->__handleException($e, __FUNCTION__);
+            return false;
+        }
     }
 
     /**
@@ -202,14 +231,19 @@ class RedisEngine extends CacheEngine
     public function groups()
     {
         $result = array();
-        foreach ($this->settings['groups'] as $group) {
-            $value = $this->_Predis->get($this->settings['prefix'] . $group);
-            if (!$value) {
-                $value = 1;
-                $this->_Predis->set($this->settings['prefix'] . $group, $value);
+        try {
+            foreach ($this->settings['groups'] as $group) {
+                $value = $this->_Predis->get($this->settings['prefix'] . $group);
+                if (!$value) {
+                    $value = 1;
+                    $this->_Predis->set($this->settings['prefix'] . $group, $value);
+                }
+                $result[] = $group . $value;
             }
-            $result[] = $group . $value;
+        } catch (Exception $e) {
+            $this->__handleException($e, __FUNCTION__);
         }
+
         return $result;
     }
 
@@ -222,8 +256,12 @@ class RedisEngine extends CacheEngine
      */
     public function clearGroup($group)
     {
-        error_log(print_r($this->settings['prefix'] . $group, true)); //TODO delete me
-        return (bool) $this->_Predis->incr($this->settings['prefix'] . $group);
+        try {
+            return (bool) $this->_Predis->incr($this->settings['prefix'] . $group);
+        } catch (Exception $e) {
+            $this->__handleException($e, __FUNCTION__);
+            return false;
+        }
     }
 
 
@@ -253,11 +291,16 @@ class RedisEngine extends CacheEngine
             $value = serialize($value);
         }
 
-        $result = $this->_Predis->setnx($key, $value);
-        // setnx() doesn't have an expiry option, so overwrite the key with one
-        if ($result) {
-            return $this->_Predis->setex($key, $duration, $value);
+        try {
+            $result = $this->_Predis->setnx($key, $value);
+            // setnx() doesn't have an expiry option, so overwrite the key with one
+            if ($result) {
+                return $this->_Predis->setex($key, $duration, $value);
+            }
+        } catch (Exception $e) {
+            $this->__handleException($e, __FUNCTION__);
         }
+
         return false;
     }
 
@@ -307,5 +350,22 @@ class RedisEngine extends CacheEngine
         }
 
         return $return;
+    }
+
+    /**
+     * This method will take care of handling exceptions by checking the settings self::THROW_EXCEPTIONS option
+     * if set to true then it will rethrow the exception; otherwise it will just log it and continue
+     *
+     * @param Exception $e
+     * @param string $metadata
+     * @return void
+     */
+    private function __handleException(Exception $e, $metadata = '')
+    {
+        CakeLog::error('RedisCache.RedisEngine ' . $metadata . ' error ' . $e->getMessage());
+
+        if ($this->settings[self::THROW_EXCEPTIONS]) {
+            throw $e;
+        }
     }
 }
