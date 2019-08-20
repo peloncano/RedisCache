@@ -131,7 +131,7 @@ class RedisEngine extends CacheEngine {
      * @access public
      * @return boolean
      */
-    public function gc() {
+    public function gc($expires = null) {
         return true;
     }
 
