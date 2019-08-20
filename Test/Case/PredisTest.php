@@ -38,7 +38,9 @@ class PredisTestCase extends CakeTestCase {
         // making it appear like writes are succeeding
         $rand = rand();
 
-        $this->assertTrue($predis->set('test_key', $rand));
+        $setTestKeyResponse = $predis->set('test_key', $rand);
+
+        $this->assertEquals('OK', $setTestKeyResponse->getPayload());
         $this->assertEquals($rand, $predis->get('test_key'));
 
         $predis->del('test_key');
