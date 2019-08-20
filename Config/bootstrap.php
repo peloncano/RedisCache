@@ -23,5 +23,5 @@ class RedisConfig {
 
 // Redis plugin depends on Predis
 // @link https://github.com/nrk/predis
-App::import('Lib', 'RedisCache.Predis/Autoloader');
-Predis\Autoloader::register();
+App::import('Vendor', 'predis/predis/autoload');
+// Predis\Autoloader::register();/
