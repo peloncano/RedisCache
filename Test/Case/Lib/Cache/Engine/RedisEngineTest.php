@@ -18,7 +18,7 @@
  */
 
 App::uses('Cache', 'Cache');
-App::uses('RedisEngine', 'Redis.Cache/Engine');
+App::uses('RedisEngine', 'RedisCache.Cache/Engine');
 
 /**
  * RedisEngineTest class
@@ -47,7 +47,7 @@ class RedisEngineTest extends CakeTestCase {
         Configure::write('Cache.disable', false);
 
         Cache::config($this->_cache_name, array(
-            'engine' => 'Redis.Redis'
+            'engine' => 'RedisCache.Redis'
             , 'prefix' => $this->_cache_name . '_'
             , 'duration' => 1000
         ));
@@ -73,12 +73,13 @@ class RedisEngineTest extends CakeTestCase {
      */
     public function testSettings() {
         $settings = Cache::settings($this->_cache_name);
-        unset($settings['serialize'], $settings['path']);
+        unset($settings['serialize'], $settings['path'], $settings['groups']);
         $expecting = array(
+            'engine' => 'RedisCache.Redis',
             'prefix' => $this->_cache_name . '_'
             , 'duration'=> 1000
             , 'probability' => 100
-            , 'engine' => 'Redis.Redis'
+            , 
         );
         $this->assertSame($settings, $expecting);
     }
@@ -94,7 +95,7 @@ class RedisEngineTest extends CakeTestCase {
 
         $data = 'this is a test of the emergency broadcasting system';
         $result = Cache::write('test', $data, $this->_cache_name);
-        $this->assertTrue($result);
+        $this->__assertStatusOk($result);
 
         $result = Cache::read('test', $this->_cache_name);
         $expecting = $data; debug($result);
@@ -114,7 +115,7 @@ class RedisEngineTest extends CakeTestCase {
 
         $data = '0';
         $result = Cache::write('test', $data, $this->_cache_name);
-        $this->assertTrue($result);
+        $this->__assertStatusOk($result);
 
         $result = Cache::read('test', $this->_cache_name);
         $expected = $data;
@@ -134,7 +135,7 @@ class RedisEngineTest extends CakeTestCase {
 
         $data = 20;
         $result = Cache::write('test', $data, $this->_cache_name);
-        $this->assertTrue($result);
+        $this->__assertStatusOk($result);
 
         $result = Cache::read('test', $this->_cache_name);
         $expecting = $data;
@@ -154,7 +155,7 @@ class RedisEngineTest extends CakeTestCase {
 
         $data = -30;
         $result = Cache::write('test', $data, $this->_cache_name);
-        $this->assertTrue($result);
+        $this->__assertStatusOk($result);
 
         $result = Cache::read('test', $this->_cache_name);
         $expecting = $data;
@@ -175,7 +176,7 @@ class RedisEngineTest extends CakeTestCase {
 
         $data = 0;
         $result = Cache::write('test', $data, $this->_cache_name);
-        $this->assertTrue($result);
+        $this->__assertStatusOk($result);
 
         $result = Cache::read('test', $this->_cache_name);
         $expected = (string) $data;
@@ -195,7 +196,7 @@ class RedisEngineTest extends CakeTestCase {
 
         $data = array('bob' => 'says hi to you!');
         $result = Cache::write('test', $data, $this->_cache_name);
-        $this->assertTrue($result);
+        $this->__assertStatusOk($result);
 
         $result = Cache::read('test', $this->_cache_name);
         $expecting = $data;
@@ -218,7 +219,7 @@ class RedisEngineTest extends CakeTestCase {
         $data->testArrayProperty = array('speech' => 'says Hi');
 
         $result = Cache::write('test', $data, $this->_cache_name);
-        $this->assertTrue($result);
+        $this->__assertStatusOk($result);
 
         $result = Cache::read('test', $this->_cache_name);
         $expecting = $data;
@@ -236,7 +237,7 @@ class RedisEngineTest extends CakeTestCase {
 
 		$data = 'this is a test of the emergency broadcasting system';
 		$result = Cache::write('delete_test', $data, $this->_cache_name);
-		$this->assertTrue($result);
+		$this->__assertStatusOk($result);
 
         // assert data was written
         $result = Cache::read('delete_test', $this->_cache_name);
@@ -258,7 +259,7 @@ class RedisEngineTest extends CakeTestCase {
         Cache::set(array('duration' => 1), null, $this->_cache_name);
 
         $result = Cache::write('test_decrement', 5, $this->_cache_name);
-        $this->assertTrue($result);
+        $this->__assertStatusOk($result);
 
         $result = Cache::decrement('test_decrement', 1, $this->_cache_name);
         $this->assertSame(4, $result);
@@ -281,7 +282,7 @@ class RedisEngineTest extends CakeTestCase {
         Cache::set(array('duration' => 1), null, $this->_cache_name);
 
         $result = Cache::write('test_increment', 5, $this->_cache_name);
-        $this->assertTrue($result);
+        $this->__assertStatusOk($result);
 
         $result = Cache::increment('test_increment', 1, $this->_cache_name);
         $this->assertSame(6, $result);
@@ -294,5 +295,15 @@ class RedisEngineTest extends CakeTestCase {
 
         $result = Cache::read('test_increment', $this->_cache_name);
         $this->assertSame('8', $result);
+    }
+
+    /**
+     * Asserts PRedis respose status is OK
+     *
+     * @param Predis\Response\Status $status
+     * @return void
+     */
+    private function __assertStatusOk($status) {
+        $this->assertTrue($status->getPayload() === 'OK');
     }
 }
