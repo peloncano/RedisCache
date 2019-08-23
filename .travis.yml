@@ -29,6 +29,7 @@ before_script:
   - travis_wait ../travis/before_script.sh
 
 script:
+  - ls -la
   - ../travis/script.sh
 
 after_success:
