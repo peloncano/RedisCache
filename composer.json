@@ -3,6 +3,7 @@
     "description": "A CakePHP 2.0 plugin enabling Redis (http://redis.io/) backed sessions and caching. Uses the Predis (https://github.com/nrk/predis) library to communicate with Redis.",
     "type": "cakephp-plugin",
     "require": {
+        "php": ">=5.3.0",
         "composer/installers": "~1.0",
         "predis/predis": "~1.1"
     },
