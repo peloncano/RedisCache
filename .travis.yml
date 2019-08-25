@@ -34,6 +34,7 @@ script:
   - ls -la
   - ls -la ..
   - ls -la ../..
+  - cat ../cakephp/app/Config/bootstrap.php
   - ../travis/script.sh
 
 after_success:
